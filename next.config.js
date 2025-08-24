@@ -6,18 +6,7 @@ checkEnvVariables()
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
-  reactStrictMode: true,
-  logging: {
-    fetches: {
-      fullUrl: true,
-    },
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  output: "standalone",
   images: {
     remotePatterns: [
       {
@@ -36,7 +25,23 @@ const nextConfig = {
         protocol: "https",
         hostname: "medusa-server-testing.s3.us-east-1.amazonaws.com",
       },
+      {
+        protocol: 'https',
+        hostname: 'pub-6d8a776369fa4d0f877c5cace5e9ae54.r2.dev',
+      },
     ],
+  },
+  reactStrictMode: true,
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
   },
 }
 
