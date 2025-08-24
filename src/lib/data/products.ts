@@ -26,7 +26,7 @@ export const listProducts = async ({
     throw new Error("Country code or region ID is required")
   }
 
-  const limit = queryParams?.limit || 12
+  const limit = queryParams?.limit || 24
   const _pageParam = Math.max(pageParam, 1)
   const offset = (_pageParam === 1) ? 0 : (_pageParam - 1) * limit;
 
@@ -90,7 +90,7 @@ export const listProducts = async ({
  * It will then return the paginated products based on the page and limit parameters.
  */
 export const listProductsWithSort = async ({
-  page = 0,
+  page = 1,
   queryParams,
   sortBy = "created_at",
   countryCode,
@@ -104,24 +104,26 @@ export const listProductsWithSort = async ({
   nextPage: number | null
   queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
 }> => {
-  const limit = queryParams?.limit || 12
+  const limit = queryParams?.limit || 24
 
+  // Fetch more products to allow for better sorting and pagination
   const {
     response: { products, count },
   } = await listProducts({
-    pageParam: 0,
+    pageParam: 1,
     queryParams: {
       ...queryParams,
-      limit: 100,
+      limit: Math.max(100, limit * 4), // Fetch at least 4x the limit for better pagination
     },
     countryCode,
   })
 
   const sortedProducts = sortProducts(products, sortBy)
 
+  // Fix page calculation - page should start from 1, not 0
   const pageParam = (page - 1) * limit
 
-  const nextPage = count > pageParam + limit ? pageParam + limit : null
+  const nextPage = count > pageParam + limit ? page + 1 : null
 
   const paginatedProducts = sortedProducts.slice(pageParam, pageParam + limit)
 

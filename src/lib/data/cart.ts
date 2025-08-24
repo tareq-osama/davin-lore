@@ -51,39 +51,55 @@ export async function retrieveCart(cartId?: string) {
 }
 
 export async function getOrSetCart(countryCode: string) {
-  const region = await getRegion(countryCode)
+  try {
+    const region = await getRegion(countryCode)
 
-  if (!region) {
-    throw new Error(`Region not found for country code: ${countryCode}`)
+    if (!region) {
+      console.error(`Region not found for country code: ${countryCode}`)
+      return null
+    }
+
+    let cart = await retrieveCart()
+
+    const headers = {
+      ...(await getAuthHeaders()),
+    }
+
+    if (!cart) {
+      try {
+        const cartResp = await sdk.store.cart.create(
+          { region_id: region.id },
+          {},
+          headers
+        )
+        cart = cartResp.cart
+
+        await setCartId(cart.id)
+
+        const cartCacheTag = await getCacheTag("carts")
+        revalidateTag(cartCacheTag)
+      } catch (error: any) {
+        console.error("Error creating cart:", error)
+        return null
+      }
+    }
+
+    if (cart && cart?.region_id !== region.id) {
+      try {
+        await sdk.store.cart.update(cart.id, { region_id: region.id }, {}, headers)
+        const cartCacheTag = await getCacheTag("carts")
+        revalidateTag(cartCacheTag)
+      } catch (error: any) {
+        console.error("Error updating cart region:", error)
+        // Continue with the cart even if region update fails
+      }
+    }
+
+    return cart
+  } catch (error: any) {
+    console.error("Error in getOrSetCart:", error)
+    return null
   }
-
-  let cart = await retrieveCart()
-
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-
-  if (!cart) {
-    const cartResp = await sdk.store.cart.create(
-      { region_id: region.id },
-      {},
-      headers
-    )
-    cart = cartResp.cart
-
-    await setCartId(cart.id)
-
-    const cartCacheTag = await getCacheTag("carts")
-    revalidateTag(cartCacheTag)
-  }
-
-  if (cart && cart?.region_id !== region.id) {
-    await sdk.store.cart.update(cart.id, { region_id: region.id }, {}, headers)
-    const cartCacheTag = await getCacheTag("carts")
-    revalidateTag(cartCacheTag)
-  }
-
-  return cart
 }
 
 export async function updateCart(data: HttpTypes.StoreUpdateCart) {
@@ -121,37 +137,54 @@ export async function addToCart({
   countryCode: string
 }) {
   if (!variantId) {
-    throw new Error("Missing variant ID when adding to cart")
+    return { success: false, error: "Missing variant ID when adding to cart" }
   }
 
-  const cart = await getOrSetCart(countryCode)
+  try {
+    const cart = await getOrSetCart(countryCode)
 
-  if (!cart) {
-    throw new Error("Error retrieving or creating cart")
+    if (!cart) {
+      return { success: false, error: "Error retrieving or creating cart" }
+    }
+
+    const headers = {
+      ...(await getAuthHeaders()),
+    }
+
+    try {
+      await sdk.store.cart
+        .createLineItem(
+          cart.id,
+          {
+            variant_id: variantId,
+            quantity,
+          },
+          {},
+          headers
+        )
+        .then(async () => {
+          const cartCacheTag = await getCacheTag("carts")
+          revalidateTag(cartCacheTag)
+
+          const fulfillmentCacheTag = await getCacheTag("fulfillment")
+          revalidateTag(fulfillmentCacheTag)
+        })
+
+      return { success: true, error: null }
+    } catch (lineItemError: any) {
+      console.error("Error creating line item:", lineItemError)
+      return { 
+        success: false, 
+        error: lineItemError.message || "Failed to add item to cart" 
+      }
+    }
+  } catch (error: any) {
+    console.error("Error adding to cart:", error)
+    return { 
+      success: false, 
+      error: error.message || "Failed to add item to cart" 
+    }
   }
-
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-
-  await sdk.store.cart
-    .createLineItem(
-      cart.id,
-      {
-        variant_id: variantId,
-        quantity,
-      },
-      {},
-      headers
-    )
-    .then(async () => {
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
-
-      const fulfillmentCacheTag = await getCacheTag("fulfillment")
-      revalidateTag(fulfillmentCacheTag)
-    })
-    .catch(medusaError)
 }
 
 export async function updateLineItem({
