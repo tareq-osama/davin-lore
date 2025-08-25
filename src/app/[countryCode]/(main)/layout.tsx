@@ -3,6 +3,8 @@ import ClientToaster from "../../../components/client-toaster"
 
 import Footer from "@modules/layout/templates/footer"
 import Nav from "@modules/layout/templates/nav"
+import CartProviderWrapper from "@modules/layout/components/cart-provider-wrapper"
+import CartStatusIndicator from "@modules/layout/components/cart-status-indicator"
 
 // Simple fallback footer component
 function FallbackFooter() {
@@ -40,14 +42,19 @@ export default async function PageLayout(props: {
   children: React.ReactNode
   params: Promise<{ countryCode: string }>
 }) {
+  const { countryCode } = await props.params
+  
   return (
     <>
-      <Nav />
-      {props.children}
-      <Suspense fallback={<FallbackFooter />}>
-        <Footer />
-      </Suspense>
-      <ClientToaster />
+      <CartProviderWrapper countryCode={countryCode}>
+        <Nav />
+        {props.children}
+        <Suspense fallback={<FallbackFooter />}>
+          <Footer />
+        </Suspense>
+        <ClientToaster />
+        <CartStatusIndicator countryCode={countryCode} />
+      </CartProviderWrapper>
     </>
   )
 }

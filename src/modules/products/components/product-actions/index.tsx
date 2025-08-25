@@ -105,6 +105,9 @@ export default function ProductActions({
     setIsAdding(true)
 
     try {
+      console.log("Adding to cart:", { variantId: selectedVariant.id, countryCode })
+      
+      // Always use direct API call for now to ensure it works in production
       const result = await addToCart({
         variantId: selectedVariant.id,
         quantity: 1,
@@ -112,15 +115,14 @@ export default function ProductActions({
       })
 
       if (result.success) {
-        // Success - cart was updated
-        console.log("Item added to cart successfully")
+        console.log("✅ Item added to cart successfully!")
+        // You could show a success toast here
       } else {
-        // Error occurred
-        console.error("Failed to add item to cart:", result.error)
-        // You could show a toast notification here
+        console.error("❌ Failed to add item to cart:", result.error)
+        // You could show an error toast here
       }
     } catch (error) {
-      console.error("Error adding to cart:", error)
+      console.error("❌ Error adding to cart:", error)
       // Handle unexpected errors
     } finally {
       setIsAdding(false)
