@@ -19,7 +19,8 @@ export const PRODUCT_LIMIT = 24
 
 export async function generateStaticParams() {
   const { collections } = await listCollections({
-    fields: "*products",
+    limit: "100",
+    offset: "0",
   })
 
   if (!collections) {

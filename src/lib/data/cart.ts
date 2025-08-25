@@ -44,7 +44,7 @@ export async function retrieveCart(cartId?: string) {
       },
       headers,
       next,
-      cache: "force-cache",
+      cache: "no-store", // Changed from "force-cache" to ensure fresh data
     })
     .then(({ cart }) => cart)
     .catch(() => null)
@@ -485,6 +485,12 @@ export async function updateRegion(countryCode: string, currentPath: string) {
 
 export async function listCartOptions() {
   const cartId = await getCartId()
+  
+  if (!cartId) {
+    console.warn("No cart ID found when listing cart options")
+    return { shipping_options: [] }
+  }
+  
   const headers = {
     ...(await getAuthHeaders()),
   }
@@ -492,12 +498,17 @@ export async function listCartOptions() {
     ...(await getCacheOptions("shippingOptions")),
   }
 
-  return await sdk.client.fetch<{
-    shipping_options: HttpTypes.StoreCartShippingOption[]
-  }>("/store/shipping-options", {
-    query: { cart_id: cartId },
-    next,
-    headers,
-    cache: "force-cache",
-  })
+  try {
+    return await sdk.client.fetch<{
+      shipping_options: HttpTypes.StoreCartShippingOption[]
+    }>("/store/shipping-options", {
+      query: { cart_id: cartId },
+      next,
+      headers,
+      cache: "force-cache",
+    })
+  } catch (error: any) {
+    console.error("Error fetching cart options:", error)
+    return { shipping_options: [] }
+  }
 }

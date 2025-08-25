@@ -21,7 +21,8 @@ export default async function Home(props: {
   const region = await getRegion(countryCode)
 
   const { collections } = await listCollections({
-    fields: "id, handle, title",
+    limit: "100",
+    offset: "0",
   })
 
   if (!collections || !region) {

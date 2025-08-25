@@ -29,10 +29,10 @@ async function getRegionMap(cacheId: string) {
         "x-publishable-api-key": PUBLISHABLE_API_KEY!,
       },
       next: {
-        revalidate: 3600,
+        revalidate: 0, // Changed from 3600 to 0 for immediate revalidation
         tags: [`regions-${cacheId}`],
       },
-      cache: "force-cache",
+      cache: "no-store", // Changed from "force-cache" to ensure fresh data
     }).then(async (response) => {
       const json = await response.json()
 
