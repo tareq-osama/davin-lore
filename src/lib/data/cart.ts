@@ -67,6 +67,7 @@ export async function getOrSetCart(countryCode: string) {
 
     if (!cart) {
       try {
+        console.log(`Creating new cart for region: ${region.id}`)
         const cartResp = await sdk.store.cart.create(
           { region_id: region.id },
           {},
@@ -74,12 +75,21 @@ export async function getOrSetCart(countryCode: string) {
         )
         cart = cartResp.cart
 
-        await setCartId(cart.id)
+        if (cart?.id) {
+          await setCartId(cart.id)
+          console.log(`Cart created successfully with ID: ${cart.id}`)
+        }
 
         const cartCacheTag = await getCacheTag("carts")
         revalidateTag(cartCacheTag)
       } catch (error: any) {
         console.error("Error creating cart:", error)
+        console.error("Cart creation error details:", {
+          regionId: region.id,
+          countryCode,
+          backendUrl: process.env.MEDUSA_BACKEND_URL,
+          error: error.message || error
+        })
         return null
       }
     }
@@ -98,6 +108,11 @@ export async function getOrSetCart(countryCode: string) {
     return cart
   } catch (error: any) {
     console.error("Error in getOrSetCart:", error)
+    console.error("getOrSetCart error details:", {
+      countryCode,
+      backendUrl: process.env.MEDUSA_BACKEND_URL,
+      error: error.message || error
+    })
     return null
   }
 }
@@ -180,6 +195,13 @@ export async function addToCart({
     }
   } catch (error: any) {
     console.error("Error adding to cart:", error)
+    console.error("addToCart error details:", {
+      variantId,
+      quantity,
+      countryCode,
+      backendUrl: process.env.MEDUSA_BACKEND_URL,
+      error: error.message || error
+    })
     return { 
       success: false, 
       error: error.message || "Failed to add item to cart" 
