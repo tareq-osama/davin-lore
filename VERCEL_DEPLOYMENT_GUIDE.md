@@ -107,6 +107,11 @@ The app automatically runs diagnostics in production. Look for:
 **Symptoms**: 401 Unauthorized errors
 **Solution**: Check `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` value
 
+### **Issue 5: Customer Not Found Error** 🆕
+**Symptoms**: `Customer with id: cus_xxx was not found`
+**Solution**: The app now automatically cleans up invalid customer authentication
+**Manual Fix**: Visit `/api/customer-auth-cleanup` to trigger cleanup
+
 ## 📋 **Vercel-Specific Checklist**
 
 ### **Environment Variables:**

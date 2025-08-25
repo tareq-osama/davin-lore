@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { getOrSetCart, retrieveCart } from "@lib/data/cart"
+import { cleanupInvalidCustomerAuth } from "@lib/util/customer-auth-cleanup"
 
 interface UseCartInitializerReturn {
   cart: HttpTypes.StoreCart | null
@@ -23,6 +24,12 @@ export const useCartInitializer = (countryCode: string): UseCartInitializerRetur
       setIsLoading(true)
       
       console.log("🔄 Initializing cart for country code:", countryCode)
+      
+      // Clean up any invalid customer authentication first
+      const cleanupResult = await cleanupInvalidCustomerAuth()
+      if (cleanupResult.cleaned) {
+        console.log("🧹 Cleaned up invalid customer auth:", cleanupResult.reason)
+      }
       
       // First try to retrieve existing cart
       let existingCart = await retrieveCart()

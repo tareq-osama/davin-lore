@@ -64,14 +64,42 @@ export async function getOrSetCart(countryCode: string) {
     const headers = {
       ...(await getAuthHeaders()),
     }
+    
+    // Check if we have an invalid customer token and clear it
+    if (headers.authorization) {
+      try {
+        // Test if the customer token is valid by making a simple request
+        await sdk.client.fetch("/store/customers/me", {
+          method: "GET",
+          headers,
+          cache: "no-store",
+        })
+      } catch (authError: any) {
+        if (authError.message?.includes('Customer with id') && authError.message?.includes('was not found')) {
+          console.log("🔄 Invalid customer token detected, clearing authentication...")
+          await removeAuthToken()
+          headers.authorization = undefined
+        }
+      }
+    }
 
     if (!cart) {
       try {
         console.log(`Creating new cart for region: ${region.id}`)
+        
+        // Check if there's an invalid customer ID in headers and clear it
+        let cleanHeaders = { ...headers }
+        if (cleanHeaders.authorization && error?.message?.includes('Customer with id') && error?.message?.includes('was not found')) {
+          console.log("🔄 Invalid customer ID detected, clearing authentication and retrying...")
+          cleanHeaders = {}
+          // Clear the invalid customer token
+          await removeAuthToken()
+        }
+        
         const cartResp = await sdk.store.cart.create(
           { region_id: region.id },
           {},
-          headers
+          cleanHeaders
         )
         cart = cartResp.cart
 
@@ -90,6 +118,32 @@ export async function getOrSetCart(countryCode: string) {
           backendUrl: process.env.MEDUSA_BACKEND_URL,
           error: error.message || error
         })
+        
+        // If it's a customer not found error, try creating cart without authentication
+        if (error?.message?.includes('Customer with id') && error?.message?.includes('was not found')) {
+          console.log("🔄 Retrying cart creation without customer authentication...")
+          try {
+            const cartResp = await sdk.store.cart.create(
+              { region_id: region.id },
+              {},
+              {} // Empty headers - no authentication
+            )
+            cart = cartResp.cart
+
+            if (cart?.id) {
+              await setCartId(cart.id)
+              console.log(`Cart created successfully without customer auth: ${cart.id}`)
+              
+              const cartCacheTag = await getCacheTag("carts")
+              revalidateTag(cartCacheTag)
+              
+              return cart
+            }
+          } catch (retryError: any) {
+            console.error("Retry cart creation failed:", retryError)
+          }
+        }
+        
         return null
       }
     }
