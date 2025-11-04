@@ -3,7 +3,7 @@ import { listCollections } from "@lib/data/collections"
 import { Text, clx } from "@medusajs/ui"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import MedusaCTA from "@modules/layout/components/medusa-cta"
+import InsiderCTA from "@modules/layout/components/insider-cta"
 
 export default async function Footer() {
   try {
@@ -178,8 +178,8 @@ export default async function Footer() {
           <div className="flex w-full mb-16 justify-between text-ui-fg-muted">
             <Text className="txt-compact-small">
               © {new Date().getFullYear()} DAVINELORÉ. All rights reserved.
-            </Text>
-            <MedusaCTA />
+            </Text> 
+            <InsiderCTA />
           </div>
         </div>
       </footer>

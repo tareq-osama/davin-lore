@@ -1,13 +1,11 @@
 import { Text } from "@medusajs/ui"
-
-
 import Insider from "../../../common/icons/insider"
 
-const MedusaCTA = () => {
+const InsiderCTA = () => {
   return (
     <Text className="flex gap-x-2 txt-compact-small-plus items-center">
       Powered by
-      <a href="https://www.diginsider.net" target="_blank" rel="noreferrer">
+      <a href="https://www.tareqosama.com" target="_blank" rel="noreferrer">
         <Insider fill="#9ca3af" className="fill-[#9ca3af]" />
       </a>
  
@@ -15,4 +13,4 @@ const MedusaCTA = () => {
   )
 }
 
-export default MedusaCTA
+export default InsiderCTA
