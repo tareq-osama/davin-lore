@@ -10,23 +10,40 @@ type Props = {
 
 export async function generateStaticParams() {
   try {
-    const countryCodes = await listRegions().then((regions) =>
-      regions?.map((r) => r.countries?.map((c) => c.iso_2)).flat()
-    )
+    const regions = await listRegions()
+    
+    if (!regions || !Array.isArray(regions)) {
+      console.warn("No regions available during build, returning empty params")
+      return []
+    }
 
-    if (!countryCodes) {
+    const countryCodes = regions
+      .map((r) => r.countries?.map((c) => c.iso_2))
+      .flat()
+      .filter(Boolean) as string[]
+
+    if (!countryCodes || countryCodes.length === 0) {
+      console.warn("No country codes available during build, returning empty params")
       return []
     }
 
     const promises = countryCodes.map(async (country) => {
-      const { response } = await listProducts({
-        countryCode: country,
-        queryParams: { limit: 100, fields: "handle" },
-      })
+      try {
+        const { response } = await listProducts({
+          countryCode: country,
+          queryParams: { limit: 100, fields: "handle" },
+        })
 
-      return {
-        country,
-        products: response.products,
+        return {
+          country,
+          products: response?.products || [],
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch products for country ${country}:`, error)
+        return {
+          country,
+          products: [],
+        }
       }
     })
 
@@ -34,9 +51,9 @@ export async function generateStaticParams() {
 
     return countryProducts
       .flatMap((countryData) =>
-        countryData.products.map((product) => ({
+        (countryData.products || []).map((product) => ({
           countryCode: countryData.country,
-          handle: product.handle,
+          handle: product?.handle,
         }))
       )
       .filter((param) => param.handle)
@@ -44,7 +61,7 @@ export async function generateStaticParams() {
     console.error(
       `Failed to generate static paths for product pages: ${
         error instanceof Error ? error.message : "Unknown error"
-      }.`
+      }`
     )
     return []
   }
